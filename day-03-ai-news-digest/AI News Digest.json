@@ -1,0 +1,188 @@
+{
+  "name": "AI News Digest",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 9
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        0
+      ],
+      "id": "b5d56a2a-4feb-4ad2-bc4b-2635c0aeeafc",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "url": "https://gnews.io/api/v4/search",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "q",
+              "value": "AI OR Nvidia OR semiconductor"
+            },
+            {
+              "name": "lang",
+              "value": "en"
+            },
+            {
+              "name": "max",
+              "value": "5"
+            },
+            {
+              "name": "apikey",
+              "value": "a9ca124e8338ed816dae4f48eaf5e5e6"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        224,
+        0
+      ],
+      "id": "93b43878-88d1-4620-868e-cc7dfc20683c",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "models/gemini-3-flash-preview"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are creating a concise daily AI and technology news digest.\n\nBelow are today's news articles.\n\nFor each article:\n1. Give a short headline.\n2. Summarize it in 2 sentences.\n3. Explain why it matters in 1 sentence.\n\nOnly use information provided in the articles.\nDo not invent facts.\nDo not include articles that have insufficient information.\n\nArticles:{{ $json.articlesText}}\n"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        608,
+        0
+      ],
+      "id": "58357e62-b17f-4240-9f6d-a7cb0e236575",
+      "name": "Message a model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "I8b7D68HbOlj6wGN",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const articles = $json.articles || [];\n\nconst articlesText = articles.map((article, index) => {\n  return `Article ${index + 1}\nTitle: ${article.title || \"\"}\nDescription: ${article.description || \"\"}\nContent: ${article.content || \"\"}\nSource: ${article.source?.name || \"\"}\nPublished: ${article.publishedAt || \"\"}\nURL: ${article.url || \"\"}`;\n}).join(\"\\n\\n\");\n\nreturn [\n  {\n    json: {\n      articlesText\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        448,
+        0
+      ],
+      "id": "a5efb78e-4082-4c65-a3d6-a5f304a6297f",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "sendTo": "1rn20is180.varund@gmail.com",
+        "subject": "📰 Daily AI & Technology News Digest",
+        "emailType": "text",
+        "message": "={{ $json.content.parts[0].text}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        976,
+        0
+      ],
+      "id": "6ce78527-205a-4b09-afc3-b70264bc1dc8",
+      "name": "Send a message",
+      "webhookId": "507c3070-cf54-4d62-a5fe-c322bed7d157",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "iZHHdbHJraomsSLB",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "7ddedd91-84ac-4b1b-9da8-de1de8d6c063",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "502155581b9b9e75c339f5fff4440dab2082c3e796922824f8fc683a7490aadd"
+  },
+  "nodeGroups": [],
+  "id": "Q5E25468WgjxW90K",
+  "tags": []
+}
