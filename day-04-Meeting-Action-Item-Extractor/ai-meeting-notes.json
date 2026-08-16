@@ -1,0 +1,149 @@
+{
+  "name": "ai-meeting-notes",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "filters": {}
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        0,
+        0
+      ],
+      "id": "d8116e01-3ba7-4266-9218-ab559bb89dc4",
+      "name": "Gmail Trigger",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "iZHHdbHJraomsSLB",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "models/gemini-3-flash-preview"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=Extract all actionable tasks from the meeting notes.\n\nFor each action item identify:\n- Person responsible\n- Task\n- Deadline\n\nReturn ONLY valid JSON in this format:\n\n[\n  {\n    \"person\": \"\",\n    \"task\": \"\",\n    \"deadline\": \"\"\n  }\n]\n\nIf a field is not mentioned, use null.\nDo not invent information.\n\nMeeting notes:\n {{ $json.snippet }}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        224,
+        0
+      ],
+      "id": "cbec96a9-c5cf-43cb-bb11-f5b4e0a57cf5",
+      "name": "Message a model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "I8b7D68HbOlj6wGN",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "1rn20is180.varund@gmail.com",
+        "subject": "Meeting Action Items",
+        "emailType": "text",
+        "message": "={{ $json.emailBody }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        592,
+        0
+      ],
+      "id": "1099048a-86a6-4ba0-812d-fae5aca164c7",
+      "name": "Send a message",
+      "webhookId": "99325bf5-2605-4bfa-a51b-cb6950c37458",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "iZHHdbHJraomsSLB",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const rawText = $json.content.parts[0].text;\n\nconst actionItems = JSON.parse(rawText);\n\nconst formatted = actionItems.map((item, index) => {\n  return `${index + 1}. ${item.person}\n   Task: ${item.task}\n   Deadline: ${item.deadline || \"Not specified\"}`;\n}).join(\"\\n\\n\");\n\nreturn [\n  {\n    json: {\n      emailBody: `📋 MEETING ACTION ITEMS\n\n${formatted}\n\n---\nAutomatically extracted by n8n + Gemini`\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        736,
+        144
+      ],
+      "id": "3e658bae-c631-4736-a90c-c29a69d76102",
+      "name": "Code in JavaScript"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "da4b303c-4a8c-47b5-94af-5b8276dc6df3",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "502155581b9b9e75c339f5fff4440dab2082c3e796922824f8fc683a7490aadd"
+  },
+  "nodeGroups": [],
+  "id": "KgPSsvi5dHD6nNJ0",
+  "tags": []
+}
