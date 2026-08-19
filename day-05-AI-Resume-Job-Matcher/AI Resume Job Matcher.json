@@ -1,0 +1,178 @@
+{
+  "name": "AI Resume Job Matcher",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "AI Resume Matcher",
+        "formDescription": "Upload your resume and paste a job description to analyze your match.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Resume",
+              "fieldType": "file"
+            },
+            {
+              "fieldLabel": "Job Description",
+              "fieldType": "textarea"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.6,
+      "position": [
+        16,
+        96
+      ],
+      "id": "929183c5-d2b8-46a6-97d1-1765e8a7e037",
+      "name": "On form submission",
+      "webhookId": "3e996e4c-09ea-41f1-a2ab-2bf51e5e00ff"
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "binaryPropertyName": "Resume",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        240,
+        96
+      ],
+      "id": "35ffc3ea-09b2-4c2f-8f44-e9034cc2acfd",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "models/gemini-3-flash-preview"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are an AI job-matching assistant.\n\nCompare the candidate's resume against the job description.\n\nEvaluate the candidate based ONLY on information explicitly present in the resume and job description.\n\nReturn the result as JSON with exactly these fields:\n\n{\n  \"match_score\": 0,\n  \"matching_skills\": [],\n  \"partial_matches\": [],\n  \"missing_skills\": [],\n  \"recommendations\": []\n}\n\nScoring:\n90-100 = Excellent match\n75-89 = Strong match\n60-74 = Moderate match\n40-59 = Weak match\n0-39 = Poor match\n\nDo not invent skills or experience.\nDo not give credit for a skill unless the resume provides evidence.\n\nRESUME:\n{{ $json.text }}\n\nJOB DESCRIPTION:\n{{ $('On form submission').item.json['Job Description'] }}"
+            }
+          ]
+        },
+        "jsonOutput": true,
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        448,
+        96
+      ],
+      "id": "a9534525-6421-46a5-9ff0-2222635c6b2e",
+      "name": "Message a model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "I8b7D68HbOlj6wGN",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $json.content.parts[0].text;\n\nconst result = JSON.parse(response);\n\nconst emailBody = `\nRESUME MATCH ANALYSIS\n\nMatch Score: ${result.match_score}/100\n\n✅ Matching Skills\n${result.matching_skills.map(skill => `• ${skill}`).join('\\n')}\n\n🟡 Partial Matches\n${result.partial_matches.map(skill => `• ${skill}`).join('\\n')}\n\n❌ Missing Skills\n${result.missing_skills.map(skill => `• ${skill}`).join('\\n')}\n\n💡 Recommendations\n${result.recommendations.map(item => `• ${item}`).join('\\n')}\n`;\n\nreturn [\n  {\n    json: {\n      match_score: result.match_score,\n      emailBody: emailBody\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        816,
+        96
+      ],
+      "id": "5ef05921-5f73-4922-8887-8b94860398df",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "sendTo": "1rn20is180.varund@gmail.com",
+        "subject": "AI Resume Match Analysis",
+        "emailType": "text",
+        "message": "={{ $json.emailBody }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1056,
+        96
+      ],
+      "id": "b26fae89-191c-4afe-8112-420b7fa743bd",
+      "name": "Send a message",
+      "webhookId": "43957b66-7c67-41c6-82a1-1ef221f1c213",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "iZHHdbHJraomsSLB",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "On form submission": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "2bf40896-1f52-4fb8-8bee-0ef3bc28eb14",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "502155581b9b9e75c339f5fff4440dab2082c3e796922824f8fc683a7490aadd"
+  },
+  "nodeGroups": [],
+  "id": "9Eei3yfgcBqNd5gN",
+  "tags": []
+}
