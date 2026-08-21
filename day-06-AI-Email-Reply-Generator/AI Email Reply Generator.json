@@ -1,0 +1,125 @@
+{
+  "name": "AI Email Reply Generator",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "filters": {}
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        0,
+        0
+      ],
+      "id": "9d080046-c741-466d-a68f-71afc526e800",
+      "name": "Gmail Trigger",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "iZHHdbHJraomsSLB",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "models/gemini-3-flash-preview"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are an email assistant.\n\nRead the incoming email below and draft a professional and natural reply.\n\nRules:\n- Understand what the sender is asking or communicating.\n- Answer based only on information available in the email.\n- Do not invent facts, commitments, dates, or information.\n- Keep the response concise.\n- Match the tone of the sender.\n- Do not include a subject line.\n- Return only the email reply.\n\nIncoming email:\n{{ $json.snippet }}\n"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        224,
+        0
+      ],
+      "id": "f6775fe6-d41a-447e-8876-bee8b1c05b99",
+      "name": "Message a model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "I8b7D68HbOlj6wGN",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "1rn20is180.varund@gmail.com",
+        "subject": "AI Draft Reply",
+        "emailType": "text",
+        "message": "={{ $json.content.parts[0].text }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        592,
+        0
+      ],
+      "id": "cf48540e-2b73-46e0-bc38-1e5c23149a78",
+      "name": "Send a message",
+      "webhookId": "709f66f7-35b6-4a39-a5b5-f1de685635a7",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "iZHHdbHJraomsSLB",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "0f6b9211-335f-44b8-81a1-374439e96af8",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "502155581b9b9e75c339f5fff4440dab2082c3e796922824f8fc683a7490aadd"
+  },
+  "nodeGroups": [],
+  "id": "p1W8bBpm3BDOXhWL",
+  "tags": []
+}
