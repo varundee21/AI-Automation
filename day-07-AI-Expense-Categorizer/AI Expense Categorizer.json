@@ -1,0 +1,229 @@
+{
+  "name": "AI Expense Categorizer",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "0abe1bef-8aa4-4266-a7de-c9c79767a129",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1NwQ2zXm0JobfhJ8zWJrjkdFOgbdo5aHWjbwStjxmg78",
+          "mode": "list",
+          "cachedResultName": "AI Expense tracker",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1NwQ2zXm0JobfhJ8zWJrjkdFOgbdo5aHWjbwStjxmg78/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1NwQ2zXm0JobfhJ8zWJrjkdFOgbdo5aHWjbwStjxmg78/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        224,
+        0
+      ],
+      "id": "39c7a57d-0f4f-4512-b6f0-31d978105601",
+      "name": "Get row(s) in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "xgcLlXW5X14HOiTh",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "models/gemini-3-flash-preview"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are an expense categorization assistant.\n\nCategorize the expense into exactly ONE of these categories:\n\nFood\nTransportation\nShopping\nEntertainment\nTravel\nUtilities\nHealthcare\nOther\n\nExpense:\n{{ $json.Description }}\n\n\nAmount:\n{{ $json.Amount }}\n\nReturn ONLY the category name.\nDo not provide an explanation."
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        448,
+        0
+      ],
+      "id": "af8a2f6d-2f06-49d2-b6d5-d884b423b710",
+      "name": "Message a model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "I8b7D68HbOlj6wGN",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1NwQ2zXm0JobfhJ8zWJrjkdFOgbdo5aHWjbwStjxmg78",
+          "mode": "list",
+          "cachedResultName": "AI Expense tracker",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1NwQ2zXm0JobfhJ8zWJrjkdFOgbdo5aHWjbwStjxmg78/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1NwQ2zXm0JobfhJ8zWJrjkdFOgbdo5aHWjbwStjxmg78/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Description": "={{ $('Get row(s) in sheet').item.json.Description }}",
+            "Category": "={{ $json.content.parts[0].text }}"
+          },
+          "matchingColumns": [
+            "Description"
+          ],
+          "schema": [
+            {
+              "id": "Date",
+              "displayName": "Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Description",
+              "displayName": "Description",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Amount",
+              "displayName": "Amount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Category",
+              "displayName": "Category",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        816,
+        0
+      ],
+      "id": "4e331ea5-7268-466f-afca-45cc0608b220",
+      "name": "Update row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "xgcLlXW5X14HOiTh",
+          "name": "Google Sheets account 2"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Update row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "0095f928-b29b-4f02-8aa5-8ac900ef925c",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "502155581b9b9e75c339f5fff4440dab2082c3e796922824f8fc683a7490aadd"
+  },
+  "nodeGroups": [],
+  "id": "inyj53wXX8Ft26fI",
+  "tags": []
+}
