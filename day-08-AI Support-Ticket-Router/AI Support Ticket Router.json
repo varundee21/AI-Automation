@@ -1,0 +1,244 @@
+{
+  "name": "AI Support Ticket Router",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -512,
+        -16
+      ],
+      "id": "98d71fe2-74d1-425c-98ba-86da0b19b71b",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ec522dbb-a0b7-4b58-b7ed-eaaedff7906b",
+              "name": "ticket",
+              "value": "How can I change my profile picture?",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        -208,
+        -16
+      ],
+      "id": "e8faec1b-57ea-4154-8e04-f62c6fd5d180",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "models/gemini-3-flash-preview"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are an AI support ticket router.\n\nAnalyze the following support ticket.\n\nReturn ONLY valid JSON with exactly these three fields:\n\n{\n  \"category\": \"\",\n  \"priority\": \"\",\n  \"action\": \"\"\n}\n\nRules:\n\ncategory must be one of:\nBilling\nTechnical\nAccount\nGeneral\n\npriority must be one of:\nHigh\nMedium\nLow\n\naction should be a short description of what the support team should do.\n\nSupport ticket:\n{{ $json.ticket }}"
+            }
+          ]
+        },
+        "jsonOutput": true,
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        16,
+        -16
+      ],
+      "id": "8fad220d-c7a2-4bf4-a19c-808f12ead994",
+      "name": "Message a model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "I8b7D68HbOlj6wGN",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const text = $json.content.parts[0].text;\n\nconst result = JSON.parse(text);\n\nreturn {\n  json: result\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        416,
+        -16
+      ],
+      "id": "2d04e21e-3070-4824-8c31-02f73548e944",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "51b26466-8829-4fd6-a161-628307583823",
+              "leftValue": "={{ $json.priority }}",
+              "rightValue": "High",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        688,
+        -16
+      ],
+      "id": "5f135374-4164-42f2-acbd-b169c0a15697",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "sendTo": "1rn20is180.varund@gmail.com",
+        "subject": "High Priority Support Ticket!",
+        "emailType": "text",
+        "message": "=A high-priority support ticket has been received.  \nCategory: {{ $json.category }}  \nPriority: {{ $json.priority }}  \nRecommended Action: {{ $json.action }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        912,
+        -112
+      ],
+      "id": "314a42ca-2605-4bfc-9383-5e6bc4370024",
+      "name": "Send a message",
+      "webhookId": "7df17cec-77ad-4997-bace-ac8aae8de79a",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "iZHHdbHJraomsSLB",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "1rn20is180.varund@gmail.com",
+        "subject": "Support Ticket - Normal Priority",
+        "emailType": "text",
+        "message": "=A normal-priority support ticket has been received.  \nCategory: {{ $json.category }}  \nPriority: {{ $json.priority }}  \nRecommended Action: {{ $json.action }}  No urgent escalation is required.",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        912,
+        80
+      ],
+      "id": "c6b0089a-54b6-4153-9193-4f4d17e80023",
+      "name": "Send a message1",
+      "webhookId": "8637b350-9d71-45b6-bd6e-eb341f097aa3",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "iZHHdbHJraomsSLB",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send a message1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "d833398d-e192-4cd7-94ca-b4199f1c8bb2",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "502155581b9b9e75c339f5fff4440dab2082c3e796922824f8fc683a7490aadd"
+  },
+  "nodeGroups": [],
+  "id": "D9Z1D7mfLuTEPlaA",
+  "tags": []
+}
