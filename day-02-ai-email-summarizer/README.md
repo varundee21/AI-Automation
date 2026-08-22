@@ -5,3 +5,8 @@ Built an n8n workflow that automatically summarizes incoming Gmail emails using 
 **Workflow:**  
 Gmail Trigger → Gemini LLM → Gmail Send
 
+Prompt:
+Summarize the following email in 2-3 concise sentences. Focus on the main point, important details, dates, times, and required actions.
+
+Email:
+{{$json.snippet}}
