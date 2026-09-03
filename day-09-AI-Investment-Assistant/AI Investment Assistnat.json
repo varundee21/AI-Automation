@@ -1,0 +1,347 @@
+{
+  "name": "AI Investment Assistnat",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -528,
+        0
+      ],
+      "id": "bcdaf57e-b06f-492f-9371-c8dcaf4282bc",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "15d8041c-0cb4-47dc-b1cd-0a0dc5356919",
+              "name": "Ticker",
+              "value": "GOOGL",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        -352,
+        0
+      ],
+      "id": "bad176a8-3689-43f9-8798-60f0ff7681e0",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "jsCode": "const tickers = $json.Ticker.split(',');\n\nreturn tickers.map(ticker => ({\n  json: {\n    ticker: ticker.trim()\n  }\n}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -128,
+        0
+      ],
+      "id": "f2d57002-6074-41cb-870d-c3f1ed416ba6",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "url": "https://api.twelvedata.com/quote",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "symbol",
+              "value": "={{ $json.ticker }}"
+            },
+            {
+              "name": "apikey",
+              "value": "b0c3ce9df46e4ecda7385b6de6383ed3"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        96,
+        0
+      ],
+      "id": "9ba925a8-337d-4ac8-8c42-dce35a531e6f",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "jsCode": "return items.map(item => {\n  const data = item.json;\n\n  return {\n    json: {\n      ticker: data.symbol,\n      name: data.name,\n      price: Number(data.close),\n      previous_close: Number(data.previous_close),\n      change: Number(data.change),\n      percent_change: Number(data.percent_change),\n      market_open: data.is_market_open\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        320,
+        0
+      ],
+      "id": "f9158ff5-fbba-4e92-b46b-b7a15fc0922e",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "3e2ba15c-9e5c-4009-aad0-4f48b6ab8d39",
+              "leftValue": "={{ Math.abs($json.percent_change) }}",
+              "rightValue": 2,
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        544,
+        0
+      ],
+      "id": "5e687866-3ff2-46e5-b21e-a75dd22c8017",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "url": "=https://news.google.com/rss/search?q={{ encodeURIComponent($json.name + \" stock\") }}&hl=en-US&gl=US&ceid=US:en",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        784,
+        -16
+      ],
+      "id": "cc3143b8-888e-40c5-b2b8-01c783f3dc4f",
+      "name": "HTTP Request1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const articles = $input.all().map(item => item.json);\n\nconst stock = $('If').first().json;\n\nreturn [\n  {\n    json: {\n      ticker: stock.ticker,\n      price: stock.price,\n      percent_change: stock.percent_change,\n      articles: articles\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        960,
+        -32
+      ],
+      "id": "d1c7ba4d-0f31-45e6-83ca-f84d24f25088",
+      "name": "Code in JavaScript2"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "models/gemini-3-flash-preview"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are a stock market news analyst.\n\nAnalyze why this stock moved significantly today.\n\nStock: {{ $json.ticker }}\nPrice: {{ $json.price }}\nChange: {{ $json.percent_change }}%\n\nLatest news:\n{{ JSON.stringify($json.articles) }}\n\nIdentify the most likely reason for the stock's movement.\n\nImportant:\n- Use only information contained in the news articles.\n- Do not invent facts.\n- If the news does not clearly explain the movement, say that.\n- Ignore irrelevant articles.\n- Give ONE overall conclusion, not one conclusion per article.\n\nReturn ONLY valid JSON:\n\n{\n  \"ticker\": \"{{ $json.ticker }}\",\n  \"movement\": \"UP or DOWN\",\n  \"reason\": \"Short explanation of why the stock likely moved\",\n  \"impact\": \"HIGH, MEDIUM, or LOW\",\n  \"confidence\": \"HIGH, MEDIUM, or LOW\"\n}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        1152,
+        -32
+      ],
+      "id": "3c5547a9-bb88-4fa0-a3e6-f40f7f43c493",
+      "name": "Message a model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "5I98WgGOk06uZmqf",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $json.content.parts[0].text;\n\nconst clean = response\n  .replace(/```json/g, '')\n  .replace(/```/g, '')\n  .trim();\n\nreturn [\n  {\n    json: JSON.parse(clean)\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1520,
+        -32
+      ],
+      "id": "0b3c6579-cb30-4b17-953f-d01e78abd9b8",
+      "name": "Code in JavaScript3"
+    },
+    {
+      "parameters": {
+        "sendTo": "1rn20is180.varund@gmail.com",
+        "subject": "Daily Stock Summary",
+        "emailType": "text",
+        "message": "=📊 STOCK ALERT\n\nTicker: {{ $json.ticker }}\nMovement: {{ $json.movement }}\n\nWhy it moved:\n{{ $json.reason }}\n\nImpact: {{ $json.impact }}\nConfidence: {{ $json.confidence }}\n\n---\nAI-generated market analysis based on recent news.",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1744,
+        -32
+      ],
+      "id": "1dde688e-b61d-4380-bf19-62abcecc179a",
+      "name": "Send a message",
+      "webhookId": "47d47310-c15a-4bc4-a2a9-94fe67b8d213",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "Kr1ZX0jDkVgV5VCf",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript2": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript3": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "c4308bef-6de1-449e-965e-5ff100235ef8",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "ca410d7a4d2ca8cb5e36f8ce845684278ca90adb5e53edd78ae7f086003df8ee"
+  },
+  "nodeGroups": [],
+  "id": "vjfvXLQ4NLiea25Y",
+  "tags": []
+}
