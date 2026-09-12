@@ -1,0 +1,216 @@
+{
+  "name": "day-10-Price-drop-monitor",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -144,
+        0
+      ],
+      "id": "26f9cd26-24df-4418-a913-3a9a9060aa8b",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/140.0.0.0 Safari/537.36"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        368,
+        0
+      ],
+      "id": "3f7b4fe9-4598-4d67-b066-239d86db75b9",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const html = $json.data;\n\nconst priceMatch = html.match(\n  /<span class=\"a-price-whole\">([\\d,]+)<\\/span>/\n);\n\nif (!priceMatch) {\n  return {\n    json: {\n      ...$('Edit Fields').item.json,\n      error: \"Price not found\"\n    }\n  };\n}\n\nconst currentPrice = Number(\n  priceMatch[1].replace(/,/g, '')\n);\n\nreturn {\n  json: {\n    product: $('Edit Fields').item.json.product,\n    url: $('Edit Fields').item.json.url,\n    target_price: Number($('Edit Fields').item.json.target_price),\n    current_price: currentPrice\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        592,
+        0
+      ],
+      "id": "560041b9-3477-49a0-9c9e-ef6af37366fa",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a00f6c2a-ac9f-4ff4-ad32-8401de46a0a4",
+              "name": "Product",
+              "value": "Puma Shoes",
+              "type": "string"
+            },
+            {
+              "id": "f32ff403-f36a-43a2-9ee0-2f9b24d2580d",
+              "name": "url",
+              "value": "https://www.amazon.in/dp/B0DW96GPYZ",
+              "type": "string"
+            },
+            {
+              "id": "85daebbc-d094-431c-85a1-56362483a297",
+              "name": "target_price",
+              "value": "2500",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        144,
+        0
+      ],
+      "id": "cf7d36bf-a099-4fd7-9a74-9464005a8768",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "d270ec53-8cfb-476f-b635-175b28ccefb9",
+              "leftValue": "={{ $json.current_price }}",
+              "rightValue": "={{ $json.target_price }}",
+              "operator": {
+                "type": "number",
+                "operation": "lte"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        800,
+        0
+      ],
+      "id": "fad4612f-6075-4b67-98d9-a2130c64070d",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "sendTo": "1rn20is180.varund@gmail.com",
+        "subject": "=Price Drop Alert — {{ $json.product }}",
+        "emailType": "text",
+        "message": "=🔥 PRICE DROP ALERT  Product: {{ $json.product }}  Current Price: ₹{{ $json.current_price }}  Your Target Price: ₹{{ $json.target_price }}  You can buy it here: {{ $json.url }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1024,
+        -16
+      ],
+      "id": "cc4de3c2-7cb8-4c99-a40a-77e1711ca847",
+      "name": "Send a message",
+      "webhookId": "e10bc0e2-a282-45c6-9169-e076a1d8592f",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "Kr1ZX0jDkVgV5VCf",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "53e69204-a747-4604-bdbe-01d181490459",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "ca410d7a4d2ca8cb5e36f8ce845684278ca90adb5e53edd78ae7f086003df8ee"
+  },
+  "nodeGroups": [],
+  "id": "h0MvuD4HGQlHOYqg",
+  "tags": []
+}
